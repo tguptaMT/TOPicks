@@ -21,4 +21,4 @@ With a straightforward no-nonense interface, TOPicks is extremely user-friendly.
 
 ![Comparative Analytics](img/analytics.png)
 
-While the machine learning model used to predict TOPicks analytics does significantly better than the baseline persistence model (today is same as yesterday | tomorrow will be same as today), the real utility of TOPicks lies in the __comparative__ analytics on both historical trends and predictve forecasts.
+The machine learning model used to predict TOPicks analytics does significantly better than the baseline persistence model (today is same as yesterday OR that tomorrow will be same as today), and as some of you can appreciate - it can be hard to beat a persitence model in certain time-series datasets. However, the real utility of TOPicks lies in one-step __comparative__ analytics on both historical trends as well as predictve forecasts for the topics under consideration.
