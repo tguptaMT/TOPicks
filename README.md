@@ -21,6 +21,6 @@ The machine learning model used to predict TOPicks analytics does significantly 
 
 ![TOPicks Pipeline](img/improved_uo.png)
 
-However, the real utility of TOPicks lies in one-step __comparative__ analytics on both historical trends as well as predictve forecasts for the topics under consideration. With a straightforward no-nonense interface, TOPicks is extremely user-friendly. As a content-creator, writer or decision-maker, you'd enter a list of 3 candidate topics you or your team is interested in potentially writing about and TOPicks will return historical popularity trends for your selected topics along with a __comparative weekly forecast__ for the next 8 weeks. It'll also return some additional topic suggestions related to your keywords that you might not have considerted before.
+However, the real utility of TOPicks lies in one-step __comparative__ analytics on both historical trends as well as predictve forecasts for the topics under consideration. With a straightforward no-nonense interface, TOPicks is extremely user-friendly. As a content-creator, writer or decision-maker, you'd enter a list of 3 candidate topics you or your team is interested in potentially writing about and TOPicks will return historical popularity trends for your selected topics along with a __comparative weekly forecast__ for the next 8 weeks. It'll also return some additional topic suggestions related to your keywords that you might not have considered before.
 
 ![Comparative Analytics](img/analytics.png)
