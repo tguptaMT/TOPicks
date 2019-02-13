@@ -8,6 +8,8 @@ import base64
 from gensim.models import Word2Vec
 from joblib import dump, load
 
+import json
+
 import plotly
 import plotly.plotly as py
 import plotly.graph_objs as go
@@ -18,52 +20,68 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # DEFINE ALL FUNCTIONS
 #######################################################################
 
+def user2topic(uinput):
+    """
+    uInput: User Input -  string; ngram=(1, 2)' 
+    Function: 
+        - transform user input with trained NMF model to match against the topic.
+        - If topic not found in first pass in case the model has never seen the user input before,
+          find synonyms with the trained word2vec model and then pass the synonyms through NMF.
+    Output: Matched topic number. Default: 0 (That is, misc. category)
+    """
+    try:
+        user_nmf = nmf.transform(vectorizer.transform([uinput]))[0]
+        matched_topic = user_nmf.argmax()
+        if matched_topic == 0: # try synonyms to user-input from word2vec 
+            user2similar = w2v.wv.most_similar(positive=uinput,topn=10)
+            related_topics = [x for x in list(sum(user2similar, ())) if str(x).isalpha()]
+            user_nmf = nmf.transform(vectorizer.transform([" ".join(related_topics)]))[0]
+            matched_topic = user_nmf.argmax()
+        return matched_topic
+    except KeyError:
+        return 0
+
+
 def process_related_topics(input_array):
-    all_related_topics = []
+
+    #######################################################################
+    # QUERY AGAINST INTERNAL TOPICS WITH TRAINED NMF MODEL
+    #######################################################################
+
+    all_matched_topics=[]
     for uinput in input_array:
         try:
-            user2similar = w2v.wv.most_similar(positive=uinput,topn=10)
+            matched_topic = user2topic(uinput)
+            if matched_topic == 0:
+                matched_topic = user2topic(uinput[:-1]) # try removing the last char ('s)
+                if matched_topic == 0:
+                    matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)
+                    
+            # sanity check for debugging:
+            print(matched_topic, all_topics[str(matched_topic)])
+            
         except KeyError:
-            try:
-                user2similar = w2v.wv.most_similar(positive=uinput[:-1],topn=10)
-            except KeyError:
-                try:
-                    user2similar = w2v.wv.most_similar(positive=uinput[:-2],topn=10) #convert eg. taxes to tax
-                except KeyError:
-                    print("Sorry, we currently do not have data for - {}, Try a different topic.".
-                      format(uinput))
-                    user2similar = ''
-                pass
+            user2similar = ''
             pass
-
-        all_related_topics.append([x for x in list(sum(user2similar, ())) if str(x).isalpha()])
-
-
-    #######################################################################
-    # QUERY AGAINST INTERNAL TOPICS FOR FORECASTING
-    #######################################################################
-    matched_topics=[]
-    for related_topics in all_related_topics:
         
-        # Transform user-input and highly-similar topics to match with topic data:
-        user_nmf = nmf.transform(vectorizer.transform([" ".join(related_topics)]))[0]
-        matched_topics.append(user_nmf.argmax())
+        all_matched_topics.append(matched_topic)
 
-        # for debugging and internal topic matching: don't show to the user:
-        #print("\n- Likely forecast topic #", matched_topic, ":\t", all_topics[matched_topic],)
-
+    #######################################################################
+    # EXTRACT TOPIC DATA FOR FORECASTING
+    #######################################################################
 
     utopics = {}
-    for topic in matched_topics:
+    for topic in all_matched_topics:
         utopics[topic] = pilot[pilot['predicted_topic'] == topic].set_index('date')\
-                                                                          ['likes_count'].resample('M').median()
+                                                            ['likes_count'].resample('M').median()
 
-    return utopics, matched_topics
+    return utopics, all_matched_topics
+
+#-----------------------------------------END OF FUNCTIONS--------------------------------------------#
 
 #######################################################################
 # LOAD PREVIOUSLY TRAINED MODELS AND DATA
 #######################################################################
-
 
 # word2vec model for synonyms:
 w2v = Word2Vec.load("model/word2vec/w2v_bigram.model")
@@ -83,13 +101,6 @@ ts_name = 'data/ts_predictions/all_preds_ts_gb_hptuning=False_nmf_ntopics=198.pa
 predictions = pd.read_parquet(ts_name, engine='pyarrow')
 
 
-
-#######################################################################
-# Topics available in Database
-#######################################################################
-
-list_all_titles = [x.split(" | ").title() for x in all_topics]
-
 #######################################################################
 # DASH APP
 #######################################################################
@@ -103,7 +114,7 @@ app.layout = html.Div([
     html.Div(html.H1('TO·P·icks', style = {'textAlign': 'center', 'padding': '2px', 'height': '20px', 'margin-top': '10px', 'fontSize':70, 'font-weight':'bold','color': '#D81111'})),
 # subtitle:    
     html.Div(html.H3('Forecast Consumer-Interest in Topics', style = {'textAlign': 'center', 'height': '10px','color':'#07329C', 'fontSize':35, 'font-weight':'bold', 'margin-top': '60px'})),
-# image:    
+# imagetitle:    
     html.Div(html.Img(id='head-image', src='data:image/jpeg;base64,{}'.format(main_img.decode('ascii')),
                       style = {'width':'100%', 'height': '500px', 'padding':'0','margin':'0','margin-top': '30px','box-sizing':'border-box'})),
 
@@ -128,7 +139,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Dropdown(
         id='dropdown_input1',
-        options=[{'label': i, 'value': i} for i in list_all_titles],
+        options=[{'label': i, 'value': i} for i in all_topics],
         placeholder='Select Topic# 1'),
         ],
         style={'width': '15%', 'display': 'inline-block'}),
@@ -136,7 +147,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Dropdown(
         id='dropdown_input2',
-        options=[{'label': i, 'value': i} for i in list_all_titles],
+        options=[{'label': i, 'value': i} for i in all_topics],
         placeholder='Select Topic# 2'),
         ],
         style={'width': '15%', 'display': 'inline-block'}),
@@ -144,7 +155,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Dropdown(
         id='dropdown_input3',
-        options=[{'label': i, 'value': i} for i in list_all_titles],
+        options=[{'label': i, 'value': i} for i in all_topics],
         placeholder='Select Topic# 3'),
         ],
         style={'width': '15%', 'display': 'inline-block'}),
@@ -158,7 +169,6 @@ app.layout = html.Div([
 
     # results:
     #html.Div(html.H3("RESULTS:", style = {'textAlign': 'center', 'height': '10px', 'fontSize':40,'color':'#1B698E'})),
-    html.Br(),
     html.Br(),
     html.Br(),
     html.Div(html.H3("Comparative Historical Trends for the Selected Topics", 
@@ -181,13 +191,13 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
         uinputs = [i.lower() for i in uinputs if i is not None]
 
         try:
-            utopics, matched_topics = process_related_topics(uinputs)
+            utopics, all_matched_topics = process_related_topics(uinputs)
             print("Inputs are:", uinputs)
 
             ## Plot Historical Analytics
             allts = []
             for key, ts in utopics.items():
-                label = [each[0] for each in zip(uinputs, matched_topics) if key in each][0]
+                label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
                 x = ts.index
                 y = ts.values
                 allts.append(go.Scatter(
