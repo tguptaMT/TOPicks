@@ -139,7 +139,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Dropdown(
         id='dropdown_input1',
-        options=[{'label': i, 'value': i} for i in all_topics],
+        options=[{'label': v, 'value': v} for v in all_topics.values()],
         placeholder='Select Topic# 1'),
         ],
         style={'width': '15%', 'display': 'inline-block'}),
@@ -147,7 +147,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Dropdown(
         id='dropdown_input2',
-        options=[{'label': i, 'value': i} for i in all_topics],
+        options=[{'label': v, 'value': v} for v in all_topics.values()],
         placeholder='Select Topic# 2'),
         ],
         style={'width': '15%', 'display': 'inline-block'}),
@@ -155,7 +155,7 @@ app.layout = html.Div([
     html.Div([
         dcc.Dropdown(
         id='dropdown_input3',
-        options=[{'label': i, 'value': i} for i in all_topics],
+        options=[{'label': v, 'value': v} for v in all_topics.values()],
         placeholder='Select Topic# 3'),
         ],
         style={'width': '15%', 'display': 'inline-block'}),
@@ -173,10 +173,18 @@ app.layout = html.Div([
     html.Br(),
     html.Div(html.H3("Comparative Historical Trends for the Selected Topics", 
             style = {'textAlign': 'center', 'height': '10px', 'fontSize':22, 'color': '#07329C', 'font-weight':'bold'})),
-    dcc.Graph(id='my-graph',),
+    dcc.Graph(id='historical-graph',),
+    html.Br(),
+    html.Div(html.H3("Comparative Consumer-Interest Forecasts", 
+            style = {'textAlign': 'center', 'height': '10px', 'fontSize':22, 'color': '#07329C', 'font-weight':'bold'})),
+    dcc.Graph(id='predictive-graph',),
+    html.Br(),
+    html.Br(),
+    html.P('* Note that the predictive model needs to be updated weekly with new data for accurate forecasts going forward', 
+            style = {'textAlign': 'center','color':'#07329C', 'fontSize':14, 'font-style': 'italic'}),
     ])])
 
-@app.callback(Output('my-graph', 'figure'),
+@app.callback(Output('historical-graph', 'figure'),
     [Input('submit-input', 'n_clicks')],
     [State('text_input1','value'),
     State('text_input2','value'),
@@ -214,7 +222,7 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
                         color='#7f7f7f')),
                 
                 yaxis=dict(
-                    title='Median Weekly Popularity',
+                    title='Median Monthly Popularity',
                     titlefont=dict(
                         family='Courier New, monospace',
                         size=18,
