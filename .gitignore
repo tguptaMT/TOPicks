@@ -1,2 +1,4 @@
 .ipynb_checkpoints/TOPicks-step1_data_loading_cleaning_basic-analytics-checkpoint.ipynb
 .ipynb_checkpoints/*
+data/*
+model/*
