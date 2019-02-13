@@ -184,6 +184,8 @@ app.layout = html.Div([
             style = {'textAlign': 'center','color':'#07329C', 'fontSize':14, 'font-style': 'italic'}),
     ])])
 
+#####################################################################
+
 @app.callback(Output('historical-graph', 'figure'),
     [Input('submit-input', 'n_clicks')],
     [State('text_input1','value'),
@@ -235,10 +237,65 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
             return html.Div(html.H4("Something went wrong. uinputs entered", uinputs
             ),style = {'textAlign': 'center', 'height': '10px', 'fontSize':26})
 
-            #return()
+########################################################
+# Second callback for predictive analytics:
+# This is inefficient. I need to implement chained callbacks
+### Still need to operationalize the reset button.
+########################################################
 
+@app.callback(Output('predictive-graph', 'figure'),
+    [Input('submit-input', 'n_clicks')],
+    [State('text_input1','value'),
+    State('text_input2','value'),
+    State('text_input3','value'),
+    State('dropdown_input1','value'),
+    State('dropdown_input2','value'),
+    State('dropdown_input3','value'),])
+def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
+    if (n_clicks != 0):
+        # extract only the inputs entered by user: This allows for more than 3 inputs through both text and dropdown channels
+        uinputs = [tinput1, tinput2, tinput3, dinput1, dinput2, dinput3]
+        uinputs = [i.lower() for i in uinputs if i is not None]
 
+        try:
+            utopics, all_matched_topics = process_related_topics(uinputs)
+            print("Inputs are:", uinputs)
 
+            ## Plot Historical Analytics
+            # Weekly Forecast: Median Popularity
+            allpredts = []
+            for key in utopics.keys():
+                label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
+                predts = predictions[predictions['predicted_topic']==key][-8:].reset_index()\
+                        ['preds_likes_gb']
+                x = predts.index
+                y = predts.values
+                allpredts.append(go.Scatter(
+                    x=x, y=y, name=label))
+            # Layout goes separately
+            layout = go.Layout(
+                title='Comparative Predictive Analytics',
+                xaxis=dict(
+                    title='Future Weeks',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=18,
+                        color='#7f7f7f')),
+                
+                yaxis=dict(
+                    title='Median Popularity\nWeekly Forecast',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=18,
+                        color='#7f7f7f')))
+
+            fig = go.Figure(data=allpredts, layout=layout)
+    
+            return fig
+
+        except AttributeError:
+            return html.Div(html.H4("Something went wrong. uinputs entered", uinputs
+            ),style = {'textAlign': 'center', 'height': '10px', 'fontSize':26})
 
 
 
