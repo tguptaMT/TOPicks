@@ -6,10 +6,7 @@ numpy
 matplotlib
 plotly
 gunicorn
-plotly.plotly
-plotly.graph_objs
-plotly.graph_objs
 base64
-gensim.models
+gensim
 joblib
 json
