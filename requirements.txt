@@ -1,0 +1,16 @@
+dash
+dash_html_components
+dash_core_components
+dash.dependencies
+pandas
+numpy
+matplotlib
+plotly
+gunicorn
+plotly.plotly
+plotly.graph_objs
+plotly.graph_objs
+base64
+gensim.models
+joblib
+json
