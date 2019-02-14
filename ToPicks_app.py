@@ -17,11 +17,11 @@ import plotly.graph_objs as go
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-app = dash.Dash(__name__)
-server=app.server
+# app = dash.Dash(__name__)
+# server=app.server
 
-app.scripts.config.serve_locally = True
-app.css.config.serve_locally = True
+# app.scripts.config.serve_locally = True
+# app.css.config.serve_locally = True
 
 #######################################################################
 # DEFINE ALL FUNCTIONS
