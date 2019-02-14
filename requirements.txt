@@ -8,4 +8,3 @@ plotly
 gunicorn
 gensim
 joblib
-json
