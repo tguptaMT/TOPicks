@@ -17,6 +17,12 @@ import plotly.graph_objs as go
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+app = dash.Dash(__name__)
+server=app.server
+
+app.scripts.config.serve_locally = True
+app.css.config.serve_locally = True
+
 #######################################################################
 # DEFINE ALL FUNCTIONS
 #######################################################################
@@ -85,20 +91,20 @@ def process_related_topics(input_array):
 #######################################################################
 
 # word2vec model for synonyms:
-w2v = Word2Vec.load("model/word2vec/w2v_bigram.model")
+w2v = Word2Vec.load("deploy_data/w2v_bigram.model")
 # NMF topic models for matching user input to topics:
-nmf = load('model/nmf/latest_nmf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib') 
-vectorizer = load('model/nmf/latest_tfidf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib')
+nmf = load('deploy_data/latest_nmf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib') 
+vectorizer = load('deploy_data/latest_tfidf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib')
 
 # import data containing topic assignments from Step2:
-tp_name = 'data/parquet_data/step2_NMF_topics=200_assigned.parquet'
+tp_name = 'deploy_data/step2_NMF_topics=200_assigned.parquet'
 pilot = pd.read_parquet(tp_name, engine='pyarrow')
-all_topics_fname = 'data/json_data/all_topics_nmf_ntop-200_nftr_50000_ngrams_(1, 3).json'
+all_topics_fname = 'deploy_data/all_topics_nmf_ntop-200_nftr_50000_ngrams_(1, 3).json'
 with open(all_topics_fname, 'r') as fp:
     all_topics = json.load(fp)
 
 # File with time-series analytics for that topic:
-ts_name = 'data/ts_predictions/all_preds_ts_gb_hptuning=False_nmf_ntopics=198.parquet'
+ts_name = 'deploy_data/all_preds_ts_gb_hptuning=False_nmf_ntopics=198.parquet'
 predictions = pd.read_parquet(ts_name, engine='pyarrow')
 
 
@@ -134,7 +140,6 @@ app.layout = html.Div([
         dcc.Input(id='text_input2', type='text', placeholder='Enter second topic'),
         dcc.Input(id='text_input3', type='text', placeholder='Enter third topic'),
 
-# Hidden (clickable) dropdown menu with pre-configured options
 
     html.Br(),
     html.Br(),
