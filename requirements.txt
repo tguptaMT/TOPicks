@@ -6,7 +6,6 @@ numpy
 matplotlib
 plotly
 gunicorn
-base64
 gensim
 joblib
 json
