@@ -1,3 +1,5 @@
+# Import all libraries
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -7,7 +9,6 @@ from dash.dependencies import Input, Output, State
 import base64
 from gensim.models import Word2Vec
 from joblib import dump, load
-
 import json
 
 import plotly
@@ -58,7 +59,7 @@ def process_related_topics(input_array):
                     matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)
                     
             # sanity check for debugging:
-            print(matched_topic, all_topics[str(matched_topic)])
+            #print(matched_topic, all_topics[str(matched_topic)])
             
         except KeyError:
             user2similar = ''
@@ -117,6 +118,11 @@ app.layout = html.Div([
 # imagetitle:    
     html.Div(html.Img(id='head-image', src='data:image/jpeg;base64,{}'.format(main_img.decode('ascii')),
                       style = {'width':'100%', 'height': '500px', 'padding':'0','margin':'0','margin-top': '30px','box-sizing':'border-box'})),
+    #html.Br(),
+# Basic info about Product:
+     html.Div(html.P('TO·P·icks uses machine-learning to predict relative consumer-interest in topics. Enter any three topics below and TO·P·icks will help you forecast\
+        how popular these topics be in the next few weeks or months relative to each other:', 
+        style = {'textAlign': 'center', 'margin':'30', 'color':'#07329C', 'fontSize':18})),
 
 # User Inputs:
     html.H4('Select topics of interest: '),    
@@ -170,21 +176,56 @@ app.layout = html.Div([
     # results:
     #html.Div(html.H3("RESULTS:", style = {'textAlign': 'center', 'height': '10px', 'fontSize':40,'color':'#1B698E'})),
     html.Br(),
-    html.Br(),
     html.Div(html.H3("Comparative Historical Trends for the Selected Topics", 
             style = {'textAlign': 'center', 'height': '10px', 'fontSize':22, 'color': '#07329C', 'font-weight':'bold'})),
+
+    # details about historical trends in a collapsable format:
+    html.Details([
+    html.Summary('Click to see details about this graph',style = {'fontSize':18, 'font-weight':'bold'}),
+    html.Div([
+        html.P("This graph represents historical data on how topics ebb and flow in their popularity over the last few years. \
+            Popularity is defined in terms of the number of Facebook likes received by a story or an article related to that specific topic.\
+        As the number of user comments and re-shares correlate strongly with the popularity of a topic, popularity was used as a\
+         composite indicator of consumer-reception and engagement.", 
+         style = {'textAlign': 'left','color':'#07329C', 'fontSize':18}),
+
+         html.P("For more information on these metrics, visit the Github repo at: https://github.com/tguptaMT/TOPicks",)],
+            style = {'textAlign': 'center','color': '#D81111', 'fontSize':16, 'font-style': 'italic'}),], 
+    style = {'textAlign': 'center'}),
+
+    # Plot historical trends:
     dcc.Graph(id='historical-graph',),
     html.Br(),
     html.Div(html.H3("Comparative Consumer-Interest Forecasts", 
             style = {'textAlign': 'center', 'height': '10px', 'fontSize':22, 'color': '#07329C', 'font-weight':'bold'})),
+
+    # details about the graph in a collapsable format:
+    html.Details([
+    html.Summary('Click to see details about this graph',style = {'fontSize':18, 'font-weight':'bold'}),
+    html.Div([
+        html.P("This graph represents predicted median popularity per week for the next 8 weeks for your selected set of topics.",
+            style = {'textAlign': 'center','color':'#07329C', 'fontSize':18}),
+        html.P("- If there are missing forecasts, that means TOPicks doesn't have enough data to make predictions on that specific topic at the moment.",)],
+            style = {'textAlign': 'center','color':'#07329C', 'fontSize':16, 'font-style': 'italic'}),], 
+    style = {'textAlign': 'center'}),
+
+    # Generate predictive graph
     dcc.Graph(id='predictive-graph',),
     html.Br(),
     html.Br(),
-    html.P('* Note that the predictive model needs to be updated weekly with new data for accurate forecasts going forward', 
-            style = {'textAlign': 'center','color':'#07329C', 'fontSize':14, 'font-style': 'italic'}),
+
+
+    # Author details:
+    html.P('© Tarun Gupta, Ph.D. (Data Science Fellow) Insight, Toronto, ON', 
+            style = {'textAlign': 'center','color':'#07329C', 'fontSize':18, 'font-weight':'bold'}),
+    html.P('https://linkedin.com/in/taruneuro/', 
+            style = {'textAlign': 'center','color':'#07329C', 'fontSize':16, 'font-style': 'italic'}),
     ])])
 
-#####################################################################
+
+########################################################
+# Process user-input; send NMF cluster and time-series predictions to hidden Div
+########################################################
 
 @app.callback(Output('historical-graph', 'figure'),
     [Input('submit-input', 'n_clicks')],
@@ -199,48 +240,41 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
         # extract only the inputs entered by user: This allows for more than 3 inputs through both text and dropdown channels
         uinputs = [tinput1, tinput2, tinput3, dinput1, dinput2, dinput3]
         uinputs = [i.lower() for i in uinputs if i is not None]
+        utopics, all_matched_topics = process_related_topics(uinputs)
 
-        try:
-            utopics, all_matched_topics = process_related_topics(uinputs)
-            print("Inputs are:", uinputs)
+        ## Plot Historical Analytics
+        allts = []
+        for key, ts in utopics.items():
+            label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
+            x = ts.index
+            y = ts.values
+            allts.append(go.Scatter(
+                x=x, y=y, name=label))
 
-            ## Plot Historical Analytics
-            allts = []
-            for key, ts in utopics.items():
-                label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
-                x = ts.index
-                y = ts.values
-                allts.append(go.Scatter(
-                    x=x, y=y, name=label))
+        # Layout goes separately
+        layout = go.Layout(
+            #title='If I wanted another subtitle',
+            xaxis=dict(
+                title='Time',
+                titlefont=dict(
+                    family='Courier New, monospace',
+                    size=18,
+                    color='#7f7f7f')),
+            
+            yaxis=dict(
+                title='Monthly Popularity / Topic\n(Median)',
+                titlefont=dict(
+                    family='Courier New, monospace',
+                    size=18,
+                    color='#7f7f7f')))
 
-            # Layout goes separately
-            layout = go.Layout(
-                #title='If I wanted another subtitle',
-                xaxis=dict(
-                    title='Time',
-                    titlefont=dict(
-                        family='Courier New, monospace',
-                        size=18,
-                        color='#7f7f7f')),
-                
-                yaxis=dict(
-                    title='Median Monthly Popularity',
-                    titlefont=dict(
-                        family='Courier New, monospace',
-                        size=18,
-                        color='#7f7f7f')))
-
-            fig = go.Figure(data=allts, layout=layout)
-            return fig
-
-        except AttributeError:
-            return html.Div(html.H4("Something went wrong. uinputs entered", uinputs
-            ),style = {'textAlign': 'center', 'height': '10px', 'fontSize':26})
+        fig = go.Figure(data=allts, layout=layout)
+        return fig
 
 ########################################################
 # Second callback for predictive analytics:
-# This is inefficient. I need to implement chained callbacks
-### Still need to operationalize the reset button.
+# This is inefficient. Need to implement chained callbacks through hidden divs.
+## list of a list and pd.series is not json serializable. Will need to change pd.series format.
 ########################################################
 
 @app.callback(Output('predictive-graph', 'figure'),
@@ -259,7 +293,8 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
 
         try:
             utopics, all_matched_topics = process_related_topics(uinputs)
-            print("Inputs are:", uinputs)
+            # Sanity check | debugging
+            #print("Inputs are:", uinputs)
 
             ## Plot Historical Analytics
             # Weekly Forecast: Median Popularity
@@ -274,7 +309,6 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
                     x=x, y=y, name=label))
             # Layout goes separately
             layout = go.Layout(
-                title='Comparative Predictive Analytics',
                 xaxis=dict(
                     title='Future Weeks',
                     titlefont=dict(
@@ -283,7 +317,7 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
                         color='#7f7f7f')),
                 
                 yaxis=dict(
-                    title='Median Popularity\nWeekly Forecast',
+                    title='Weekly Popularity Forecast (Median)',
                     titlefont=dict(
                         family='Courier New, monospace',
                         size=18,
@@ -298,6 +332,49 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
             ),style = {'textAlign': 'center', 'height': '10px', 'fontSize':26})
 
 
+
+#############################################
+# RESET ALL FIELDS IF RESET IS CLICKED
+#############################################
+
+@app.callback(Output('text_input1','value'),
+    [Input('reset-input', 'n_clicks')],)
+def reset(n_clicks):
+    if n_clicks>0:
+        return ''
+
+@app.callback(Output('text_input2','value'),
+    [Input('reset-input', 'n_clicks')],)
+def reset(n_clicks):
+    if n_clicks>0:
+        return ''
+
+@app.callback(Output('text_input3','value'),
+    [Input('reset-input', 'n_clicks')],)
+def reset(n_clicks):
+    if n_clicks>0:
+        return ''
+
+@app.callback(Output('dropdown_input1','value'),
+    [Input('reset-input', 'n_clicks')],)
+def reset(n_clicks):
+    if n_clicks>0:
+        return ''
+
+@app.callback(Output('dropdown_input2','value'),
+    [Input('reset-input', 'n_clicks')],)
+def reset(n_clicks):
+    if n_clicks>0:
+        return ''
+
+@app.callback(Output('dropdown_input3','value'),
+    [Input('reset-input', 'n_clicks')],)
+def reset(n_clicks):
+    if n_clicks>0:
+        return ''
+
+
+#############################################
 
 
 
