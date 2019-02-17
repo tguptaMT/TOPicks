@@ -109,24 +109,33 @@ def topic_data(list_matched_topics):
 
 #######################################################################
 # LOAD PREVIOUSLY TRAINED MODELS AND DATA
+# original Slug's greater than heroku's soft limit.
+# Used Lz4 compression on nmf and vect; based on this comparison: https://goo.gl/tHzmJU 
+# Cut down ~100 MB on Slug size.
 #######################################################################
 
 # word2vec model for stopic_dataynonyms:
-w2v = Word2Vec.load("deploy_data/w2v_bigram.model")
+w2v_loc = "deploy_data/w2v_bigram.model"
+w2v = Word2Vec.load(w2v_loc)
+
 # NMF topic models for matching user input to topics:
-nmf = load('deploy_data/latest_nmf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib') 
-vectorizer = load('deploy_data/latest_tfidf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib')
+nmf_loc = 'deploy_data/latest_nmf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib'
+nmf = load(nmf_loc+'.lz4') 
+
+vect_loc = 'deploy_data/latest_tfidf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib'
+vectorizer = load(vect_loc+'.lz4')
 
 # import data containing topic assignments from Step2:
-tp_name = 'deploy_data/step2_NMF_topics=200_assigned.parquet'
-pilot = pd.read_parquet(tp_name, engine='pyarrow')
-all_topics_fname = 'deploy_data/all_topics_nmf_ntop-200_nftr_50000_ngrams_(1, 3).json'
-with open(all_topics_fname, 'r') as fp:
+pilot_loc = 'deploy_data/step2_NMF_topics=200_assigned.parquet'
+pilot = pd.read_parquet(pilot_loc, engine='pyarrow')
+
+all_topics_loc = 'deploy_data/all_topics_nmf_ntop-200_nftr_50000_ngrams_(1, 3).json'
+with open(all_topics_loc, 'r') as fp:
     all_topics = json.load(fp)
 
 # File with time-series analytics for that topic:
-ts_name = 'deploy_data/all_preds_ts_gb_hptuning=False_nmf_ntopics=198.parquet'
-predictions = pd.read_parquet(ts_name, engine='pyarrow')
+ts_loc = 'deploy_data/all_preds_ts_gb_hptuning=False_nmf_ntopics=198.parquet'
+predictions = pd.read_parquet(ts_loc, engine='pyarrow')
 
 
 #######################################################################
@@ -278,6 +287,9 @@ def process_utop(mem_data):
         all_matched_topics = mem_data['all_matched_topics']
         uinputs = mem_data['uinputs']
         utopics = topic_data(all_matched_topics)
+
+        print("all_matched_topics:", all_matched_topics)
+        print("uinputs:", uinputs)
 
         ## Plot Historical Analytics
         allts = []
