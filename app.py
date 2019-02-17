@@ -4,7 +4,6 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
-import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
 import base64
 from gensim.models import Word2Vec
@@ -14,6 +13,22 @@ import json
 import plotly
 import plotly.plotly as py
 import plotly.graph_objs as go
+
+######## FOR DEBUGGING AND CHECKING MEMORY USAGE ############
+
+# import multiprocessing as mp
+# import resource
+# import gc
+
+# def mem():
+#     print('Memory usage         : % 2.2f MB' % round(
+#         resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0,1)
+#     )
+
+# mem()
+
+############################################################
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -25,7 +40,7 @@ app.css.config.serve_locally = True
 
 #######################################################################
 # DEFINE ALL FUNCTIONS
-#######################################################################
+#####################################process##################################
 
 def user2topic(uinput):
     """
@@ -48,12 +63,13 @@ def user2topic(uinput):
     except KeyError:
         return 0
 
+#-----------------------------------------------------------------------------------------#
 
 def process_related_topics(input_array):
 
-    #######################################################################
-    # QUERY AGAINST INTERNAL TOPICS WITH TRAINED NMF MODEL
-    #######################################################################
+    """
+    QUERY AGAINST INTERNAL TOPICS WITH TRAINED NMF MODEL
+    """
 
     all_matched_topics=[]
     for uinput in input_array:
@@ -72,25 +88,30 @@ def process_related_topics(input_array):
             pass
         
         all_matched_topics.append(matched_topic)
+    return all_matched_topics
 
-    #######################################################################
-    # EXTRACT TOPIC DATA FOR FORECASTING
-    #######################################################################
+#-----------------------------------------------------------------------------------------#
 
+def topic_data(list_matched_topics):
+
+    """
+    EXTRACT HISTORICAL TOPIC DATA FOR FORECASTING.
+    RESAMPLED BY MEDIAN
+    """
     utopics = {}
-    for topic in all_matched_topics:
+    for topic in list_matched_topics:
         utopics[topic] = pilot[pilot['predicted_topic'] == topic].set_index('date')\
                                                             ['likes_count'].resample('M').median()
 
-    return utopics, all_matched_topics
+    return utopics
 
-#-----------------------------------------END OF FUNCTIONS--------------------------------------------#
+#-----------------------------------------END OF FUNCTIONS----------------------------------#
 
 #######################################################################
 # LOAD PREVIOUSLY TRAINED MODELS AND DATA
 #######################################################################
 
-# word2vec model for synonyms:
+# word2vec model for stopic_dataynonyms:
 w2v = Word2Vec.load("deploy_data/w2v_bigram.model")
 # NMF topic models for matching user input to topics:
 nmf = load('deploy_data/latest_nmf_tfidf_ntop-200_nftr_50000_ngrams_(1, 3)_.joblib') 
@@ -116,6 +137,8 @@ main_img = base64.b64encode(open('./img/blocks.jpg', 'rb').read())
 
 
 app.layout = html.Div([
+# storage for utopics: lost on page reload
+    dcc.Storage(id='mem_matchedtop'),
 #title:
     html.Div(html.H1('TO·P·icks', style = {'textAlign': 'center', 'padding': '2px', 'height': '20px', 'margin-top': '10px', 'fontSize':70, 'font-weight':'bold','color': '#D81111'})),
 # subtitle:    
@@ -172,7 +195,7 @@ app.layout = html.Div([
         ])
     ]),
     html.Br(),
-    html.Div(html.Button(id='submit-input', n_clicks=0,children='Submit', style={'fontSize':20, 'color': '#D81111'}),
+    html.Div(html.Button(id='submit-input', n_clicks=1,children='Submit', style={'fontSize':20, 'color': '#D81111'}),
                          style = {'textAlign': 'center'}),
     html.Div(html.Button(id='reset-input', n_clicks=0,children='reset', style={'color': '#07329C'}),
                          style = {'textAlign': 'center'}),
@@ -226,12 +249,11 @@ app.layout = html.Div([
             style = {'textAlign': 'center','color':'#07329C', 'fontSize':16, 'font-style': 'italic'}),
     ])])
 
-
 ########################################################
 # Process user-input; send NMF cluster and time-series predictions to hidden Div
 ########################################################
 
-@app.callback(Output('historical-graph', 'figure'),
+@app.callback(Output('mem_matchedtop', 'data'),
     [Input('submit-input', 'n_clicks')],
     [State('text_input1','value'),
     State('text_input2','value'),
@@ -244,12 +266,25 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
         # extract only the inputs entered by user: This allows for more than 3 inputs through both text and dropdown channels
         uinputs = [tinput1, tinput2, tinput3, dinput1, dinput2, dinput3]
         uinputs = [i.lower() for i in uinputs if i is not None]
-        utopics, all_matched_topics = process_related_topics(uinputs)
+        all_matched_topics = process_related_topics(uinputs)
+        return {'all_matched_topics': all_matched_topics, 'uinputs': uinputs}
+
+
+@app.callback(Output('historical-graph', 'figure'),
+    [Input('mem_matchedtop', 'data')],)
+def process_utop(mem_data):
+    if  mem_data: 
+        
+        all_matched_topics = mem_data['all_matched_topics']
+        uinputs = mem_data['uinputs']
+        utopics = topic_data(all_matched_topics)
 
         ## Plot Historical Analytics
         allts = []
         for key, ts in utopics.items():
+            print("\nKEY IN PLOT_HISTORY IS: ", key, type(ts), "\n", "ABOUT ts: ", len(ts), ts)
             label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
+            print("LABEL:", label)
             x = ts.index
             y = ts.values
             allts.append(go.Scatter(
@@ -257,7 +292,7 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
 
         # Layout goes separately
         layout = go.Layout(
-            #title='If I wanted another subtitle',
+            #titplot_historyle='If I wanted another subtitle',
             xaxis=dict(
                 title='Time',
                 titlefont=dict(
@@ -275,6 +310,7 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
         fig = go.Figure(data=allts, layout=layout)
         return fig
 
+
 ########################################################
 # Second callback for predictive analytics:
 # This is inefficient. Need to implement chained callbacks through hidden divs.
@@ -282,59 +318,49 @@ def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
 ########################################################
 
 @app.callback(Output('predictive-graph', 'figure'),
-    [Input('submit-input', 'n_clicks')],
-    [State('text_input1','value'),
-    State('text_input2','value'),
-    State('text_input3','value'),
-    State('dropdown_input1','value'),
-    State('dropdown_input2','value'),
-    State('dropdown_input3','value'),])
-def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
-    if (n_clicks != 0):
-        # extract only the inputs entered by user: This allows for more than 3 inputs through both text and dropdown channels
-        uinputs = [tinput1, tinput2, tinput3, dinput1, dinput2, dinput3]
-        uinputs = [i.lower() for i in uinputs if i is not None]
+    [Input('mem_matchedtop', 'data')],)
+def process_utop(mem_data):
+    if  mem_data: 
+        
+        all_matched_topics = mem_data['all_matched_topics']
+        uinputs = mem_data['uinputs']
+        utopics = topic_data(all_matched_topics)
 
-        try:
-            utopics, all_matched_topics = process_related_topics(uinputs)
-            # Sanity check | debugging
-            #print("Inputs are:", uinputs)
 
-            ## Plot Historical Analytics
-            # Weekly Forecast: Median Popularity
-            allpredts = []
-            for key in utopics.keys():
-                label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
-                predts = predictions[predictions['predicted_topic']==key][-8:].reset_index()\
-                        ['preds_likes_gb']
-                x = predts.index
-                y = predts.values
-                allpredts.append(go.Scatter(
-                    x=x, y=y, name=label))
-            # Layout goes separately
-            layout = go.Layout(
-                xaxis=dict(
-                    title='Future Weeks',
-                    titlefont=dict(
-                        family='Courier New, monospace',
-                        size=18,
-                        color='#7f7f7f')),
-                
-                yaxis=dict(
-                    title='Weekly Popularity Forecast (Median)',
-                    titlefont=dict(
-                        family='Courier New, monospace',
-                        size=18,
-                        color='#7f7f7f')))
+        # Weekly Forecast: Median Popularity
+        allpredts = []
+        for key in utopics.keys():
+            label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
+            predts = predictions[predictions['predicted_topic']==key][-8:].reset_index()\
+                    ['preds_likes_gb']
+            x = predts.index
+            y = predts.values
+            allpredts.append(go.Scatter(
+                x=x, y=y, name=label))
 
-            fig = go.Figure(data=allpredts, layout=layout)
-    
-            return fig
+        # Layout goes separately
+        layout = go.Layout(
+            xaxis=dict(
+                title='Future Weeks',
+                titlefont=dict(
+                    family='Courier New, monospace',
+                    size=18,
+                    color='#7f7f7f')),
+            
+            yaxis=dict(
+                title='Weekly Popularity Forecast (Median)',
+                titlefont=dict(
+                    family='Courier New, monospace',
+                    size=18,
+                    color='#7f7f7f')))
 
-        except AttributeError:
-            return html.Div(html.H4("Something went wrong. uinputs entered", uinputs
-            ),style = {'textAlign': 'center', 'height': '10px', 'fontSize':26})
+        fig = go.Figure(data=allpredts, layout=layout)
 
+        # release from memory
+        all_matched_topics = None
+        uinputs = None
+        utopics = None
+        return fig
 
 
 #############################################
