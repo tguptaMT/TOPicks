@@ -9,4 +9,5 @@ gunicorn
 gensim
 joblib
 pyarrow
+sklearn
 lz4
