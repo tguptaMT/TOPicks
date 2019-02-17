@@ -1,6 +1,6 @@
 dash
 dash_html_components
-dash_core_components
+dash-core-components==0.30.0rc1
 pandas
 numpy
 matplotlib
@@ -8,5 +8,4 @@ plotly
 gunicorn
 gensim
 joblib
-sklearn
 pyarrow
