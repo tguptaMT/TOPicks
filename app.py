@@ -294,7 +294,7 @@ def process_utop(mem_data):
         ## Plot Historical Analytics
         allts = []
         for key, ts in utopics.items():
-            print("\nKEY IN PLOT_HISTORY IS: ", key, type(ts), "\n", "ABOUT ts: ", len(ts), ts)
+            print("\nKEY IN PLOT_HISTORY IS: ", key, type(ts), "\n", "TS ", ts)
             label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
             print("LABEL:", label)
             x = ts.index
