@@ -1,3 +1,4 @@
+# # -*- coding: utf-8 -*-
 # Import all libraries
 
 import dash
@@ -57,12 +58,12 @@ def process_related_topics(input_array):
     all_matched_topics=[]
     for uinput in input_array:
         try:
-            matched_topic = user2topic(uinput)
-            if matched_topic == 0:
-                matched_topic = user2topic(uinput[:-1]) # try removing the last char ('s)
-                if matched_topic == 0:
-                    matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)
-                    
+            matched_topic = user2topic(uinput). 
+            # RECURSION BELOW MIGHT BE CAUSING MEMORY INFLATION / LEAK:
+            # if matched_topic == 0:
+            #     matched_topic = user2topic(uinput[:-1]) # try removing the last char ('s)
+            #     if matched_topic == 0:
+            #         matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)        
             
         except KeyError:
             user2similar = ''
