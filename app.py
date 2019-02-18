@@ -1,5 +1,5 @@
 # # -*- coding: utf-8 -*-
-# Import all libraries
+# Import all libraries 
 
 import dash
 import dash_core_components as dcc
@@ -22,9 +22,16 @@ server=app.server
 app.scripts.config.serve_locally = True
 app.css.config.serve_locally = True
 
+
+#################### DEBUGGING MEMORY ############################
+# from pympler import tracker
+# tr = tracker.SummaryTracker() 
+# tr.print_diff() 
+######################################################################
+
 #######################################################################
 # DEFINE ALL FUNCTIONS
-#####################################process##################################
+#####################################process###########################
 
 def user2topic(uinput):
     """
@@ -89,6 +96,7 @@ def topic_data(list_matched_topics):
 
 #-----------------------------------------END OF FUNCTIONS----------------------------------#
 
+
 #######################################################################
 # LOAD PREVIOUSLY TRAINED MODELS AND DATA
 # original Slug's greater than heroku's soft limit.
@@ -118,6 +126,7 @@ with open(all_topics_loc, 'r') as fp:
 # File with time-series analytics for that topic:
 ts_loc = 'deploy_data/all_preds_ts_gb_hptuning=False_nmf_ntopics=198.parquet'
 predictions = pd.read_parquet(ts_loc, engine='pyarrow')
+
 
 
 #######################################################################
@@ -393,7 +402,6 @@ def reset(n_clicks):
 def reset(n_clicks):
     if n_clicks>0:
         return ''
-
 
 #############################################
 
