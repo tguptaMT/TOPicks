@@ -66,11 +66,11 @@ def process_related_topics(input_array):
     for uinput in input_array:
         try:
             matched_topic = user2topic(uinput)
-            # RECURSION BELOW MIGHT BE CAUSING MEMORY INFLATION / LEAK:
-            # if matched_topic == 0:
-            #     matched_topic = user2topic(uinput[:-1]) # try removing the last char ('s)
-            #     if matched_topic == 0:
-            #         matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)        
+            # RECURSION BELOW MIGHT BE CAUSING MEMORY LEAK:
+            if matched_topic == 0:
+                matched_topic = user2topic(uinput[:-1]) # try removing the last char ('s)
+                if matched_topic == 0:
+                    matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)        
             
         except KeyError:
             user2similar = ''
