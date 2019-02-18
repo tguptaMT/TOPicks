@@ -157,7 +157,7 @@ app.layout = html.Div([
     html.Div(title='select inputs', id='selections',children=[
 
 # Text input:
-    html.P('(Suggestions: Law, Tax, Climate change, Ebola, guns, Russia, Mexico, Technology, Syria, Terrorism, Putin etc.)'),
+    html.P('(Suggestions: Law, Tax, Climate change, Guns, Russia, Mexico, Technology, Syria, Terrorism, Health care etc.)'),
         dcc.Input(id='text_input1', type='text', placeholder='Enter first topic'),
         dcc.Input(id='text_input2', type='text', placeholder='Enter second topic'),
         dcc.Input(id='text_input3', type='text', placeholder='Enter third topic'),
