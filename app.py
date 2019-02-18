@@ -14,27 +14,10 @@ import plotly
 import plotly.plotly as py
 import plotly.graph_objs as go
 
-######## FOR DEBUGGING AND CHECKING MEMORY USAGE ############
-
-# import multiprocessing as mp
-# import resource
-# import gc
-
-# def mem():
-#     print('Memory usage         : % 2.2f MB' % round(
-#         resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024.0,1)
-#     )
-
-# mem()
-
-############################################################
-
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server=app.server
-
 app.scripts.config.serve_locally = True
 app.css.config.serve_locally = True
 
@@ -80,8 +63,6 @@ def process_related_topics(input_array):
                 if matched_topic == 0:
                     matched_topic = user2topic(uinput[:-2]) # try removing the last 2 chars ('es)
                     
-            # sanity check for debugging:
-            #print(matched_topic, all_topics[str(matched_topic)])
             
         except KeyError:
             user2similar = ''
@@ -166,7 +147,7 @@ app.layout = html.Div([
     html.Div(title='select inputs', id='selections',children=[
 
 # Text input:
-    html.P('(Suggestions: Law, Tax, Climate change, Ebola, guns, Russia, Mexico, Technology, India etc.)'),
+    html.P('(Suggestions: Law, Tax, Climate change, Ebola, guns, Russia, Mexico, Technology, Syria, Terrorism, Putin etc.)'),
         dcc.Input(id='text_input1', type='text', placeholder='Enter first topic'),
         dcc.Input(id='text_input2', type='text', placeholder='Enter second topic'),
         dcc.Input(id='text_input3', type='text', placeholder='Enter third topic'),
@@ -206,11 +187,13 @@ app.layout = html.Div([
     html.Br(),
     html.Div(html.Button(id='submit-input', n_clicks=1,children='Submit', style={'fontSize':20, 'color': '#D81111'}),
                          style = {'textAlign': 'center'}),
+    html.Div(html.P("(Our Monkeys are a little slow at plotting graphs. Please wait after submitting.)",
+            style = {'textAlign': 'center','color':'#07329C', 'fontSize':16, 'font-style': 'italic'})),
+    html.Br(),
     html.Div(html.Button(id='reset-input', n_clicks=0,children='reset', style={'color': '#07329C'}),
                          style = {'textAlign': 'center'}),
 
     # results:
-    #html.Div(html.H3("RESULTS:", style = {'textAlign': 'center', 'height': '10px', 'fontSize':40,'color':'#1B698E'})),
     html.Br(),
     html.Div(html.H3("Comparative Historical Trends for the Selected Topics", 
             style = {'textAlign': 'center', 'height': '10px', 'fontSize':22, 'color': '#07329C', 'font-weight':'bold'})),
@@ -260,6 +243,7 @@ app.layout = html.Div([
 
 ########################################################
 # Process user-input; send NMF cluster and time-series predictions to hidden Div
+## pd.series is not json serializable in Dash; utopics changes to list when passed to dcc.storage
 ########################################################
 
 @app.callback(Output('mem_matchedtop', 'data'),
@@ -272,9 +256,10 @@ app.layout = html.Div([
     State('dropdown_input3','value'),])
 def print_inp(n_clicks, tinput1, tinput2, tinput3, dinput1, dinput2, dinput3):
     if (n_clicks != 0):
-        # extract only the inputs entered by user: This allows for more than 3 inputs through both text and dropdown channels
+        # extract only the inputs entered by user: 
+        # Allow for more than 3 inputs through both text and dropdown channels
         uinputs = [tinput1, tinput2, tinput3, dinput1, dinput2, dinput3]
-        uinputs = [i.lower() for i in uinputs if i is not None]
+        uinputs = [y.lower() for y in [x.strip() for x in uinputs if x is not None] if len(y)>0] # get rid of empty input
         all_matched_topics = process_related_topics(uinputs)
         return {'all_matched_topics': all_matched_topics, 'uinputs': uinputs}
 
@@ -288,15 +273,10 @@ def process_utop(mem_data):
         uinputs = mem_data['uinputs']
         utopics = topic_data(all_matched_topics)
 
-        print("all_matched_topics:", all_matched_topics)
-        print("uinputs:", uinputs)
-
         ## Plot Historical Analytics
         allts = []
         for key, ts in utopics.items():
-            print("\nKEY IN PLOT_HISTORY IS: ", key, type(ts), "\n", "TS ", ts)
             label = [each[0] for each in zip(uinputs, all_matched_topics) if key in each][0]
-            print("LABEL:", label)
             x = ts.index
             y = ts.values
             allts.append(go.Scatter(
@@ -325,8 +305,6 @@ def process_utop(mem_data):
 
 ########################################################
 # Second callback for predictive analytics:
-# This is inefficient. Need to implement chained callbacks through hidden divs.
-## list of a list and pd.series is not json serializable. Will need to change pd.series format.
 ########################################################
 
 @app.callback(Output('predictive-graph', 'figure'),
