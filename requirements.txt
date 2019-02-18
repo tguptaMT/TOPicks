@@ -9,5 +9,5 @@ gunicorn
 gensim
 joblib
 pyarrow
-sklearn
+sklearn==0.19.1
 lz4
