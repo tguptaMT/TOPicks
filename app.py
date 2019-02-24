@@ -218,7 +218,7 @@ app.layout = html.Div([
          composite indicator of consumer-reception and engagement.", 
          style = {'textAlign': 'left','color':'#07329C', 'fontSize':18}),
 
-         html.P("For more information on these metrics, visit the Github repo at: https://github.com/tguptaMT/TOPicks",)],
+         html.P("The axis labels are not being displayed because of a known incompatibility with DCC Storage.",)],
             style = {'textAlign': 'center','color': '#D81111', 'fontSize':16, 'font-style': 'italic'}),], 
     style = {'textAlign': 'center'}),
 
@@ -294,20 +294,19 @@ def process_utop(mem_data):
 
         # Layout goes separately
         layout = go.Layout(
-            #titplot_historyle='If I wanted another subtitle',
             xaxis=dict(
                 title='Time',
                 titlefont=dict(
                     family='Courier New, monospace',
                     size=18,
-                    color='#7f7f7f')),
+                    color='#07329C')),
             
             yaxis=dict(
-                title='Monthly Popularity / Topic\n(Median)',
+                title='Monthly Popularity / Topic (Median)',
                 titlefont=dict(
                     family='Courier New, monospace',
                     size=18,
-                    color='#7f7f7f')))
+                    color='#07329C')))
 
         fig = go.Figure(data=allts, layout=layout)
         return fig
@@ -345,18 +344,18 @@ def process_utop(mem_data):
                 titlefont=dict(
                     family='Courier New, monospace',
                     size=18,
-                    color='#7f7f7f')),
+                    color='rgb(107, 107, 107)')),
             
             yaxis=dict(
                 title='Weekly Popularity Forecast (Median)',
                 titlefont=dict(
                     family='Courier New, monospace',
                     size=18,
-                    color='#7f7f7f')))
+                    color='#07329C')))
 
         fig = go.Figure(data=allpredts, layout=layout)
 
-        # release from memory
+        # release References for gc collection
         all_matched_topics = None
         uinputs = None
         utopics = None
