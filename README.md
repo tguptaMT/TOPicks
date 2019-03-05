@@ -26,4 +26,4 @@ However, the real utility of TOPicks lies in one-step __comparative__ analytics 
 
 ![Comparative Analytics](img/analytics.png)
 
-									__Try it today @:__ http://topicforecaster.com
+__Try it today @:__ http://topicforecaster.com
